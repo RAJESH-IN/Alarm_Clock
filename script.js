@@ -55,19 +55,19 @@ if (!localStorage.getItem('alarmTime')) {
     localStorage.setItem('alarmTime', '00:00:PM');
 }
 
-// Set hour values
+// Set hour value
 for (let i = 12; i > 0; i--) {
     i = i < 10 ? "0" + i : i;
     let option = ` <option value="${i}">${i}</option>`;
     hour.firstElementChild.insertAdjacentHTML("afterend", option);
 }
-// Set Minute values
+// Set Minute value
 for (let i = 59; i >= 0; i--) {
     i = i < 10 ? "0" + i : i;
     let option = ` <option value="${i}">${i}</option>`;
     minute.firstElementChild.insertAdjacentHTML("afterend", option);
 }
-// Set AM/PM values
+// Set AM/PM value
 for (let i = 2; i > 0; i--) {
     let am_pm = i == 1 ? "AM" : "PM";
     let option = `<option value="${am_pm}">${am_pm}</option>`;
