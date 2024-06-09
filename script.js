@@ -1,195 +1,193 @@
-const hour = document.querySelector('#hour');
-const minute = document.querySelector('#minute');
-const AmPm = document.querySelector('#ampm');
-const setAlarmBtn = document.querySelector('#setBtn');
-const content = document.querySelector('#content');
-const ringTone = new Audio('files/ringtone.mp3');
-const secondBtn = document.querySelector('#secondBtn');
-const body = document.querySelector('body');
-const resumeBtn = document.querySelector('#resumeBtn');
-const welcomeBackScreen = document.querySelector('#welcomeBack');
-const alarmTimeIndicator = document.querySelector('#alarmText');
-let CurrentTime = document.querySelector('#currentTime');
-// Check if user has exited webpage
-if (!localStorage.getItem('userExited')) {
-    localStorage.setItem('userExited', 'false');
-} else {
-    // Check if user has returned to webpage and had previously set an alarm then show him resume button
-    if (localStorage.getItem('userExited') == 'true' && localStorage.getItem('isAlarmSet') == 'true') {
-        welcomeBackScreen.className = 'welcomeBack flex';
+const currentTime = document.querySelector("#current-time");
+const setHours = document.querySelector("#hours");
+const setMinutes = document.querySelector("#minutes");
+const setSeconds = document.querySelector("#seconds");
+const setAmPm = document.querySelector("#am-pm");
+const setAlarmButton = document.querySelector("#submitButton");
+const alarmContainer = document.querySelector("#alarms-container");
+const ringTone = new Audio('./file/ringtone.mp3');
+
+
+// Get the current date
+const currentDate = new Date();
+
+// Array of week days and months
+const weekDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// Get the week day, month, day, and year
+const weekDay = weekDays[currentDate.getDay()];
+const month = months[currentDate.getMonth()];
+const day = currentDate.getDate();
+const year = currentDate.getFullYear();
+
+// Update the HTML elements with the values
+document.getElementById('week').textContent = weekDay;
+document.getElementById('month').textContent = month;
+document.getElementById('date').textContent = day;
+document.getElementById('year').textContent = year;
+
+
+// Adding Hours, Minutes, Seconds in DropDown Menu
+window.addEventListener("DOMContentLoaded", (event) => {
+  
+  dropDownMenu(1, 12, setHours);
+ 
+  dropDownMenu(0, 59, setMinutes);
+
+  dropDownMenu(0, 59, setSeconds);
+
+  setInterval(getCurrentTime, 1000);
+  fetchAlarm();
+});
+
+// Event Listener added to Set Alarm Button
+setAlarmButton.addEventListener("click", getInput);
+
+
+
+function updateClock() {
+  var now = new Date();
+  var hours = now.getHours();
+  var minutes = now.getMinutes();
+  var seconds = now.getSeconds();
+
+  var timeString = hours.toString().padStart(2, '0') + ':'
+    + minutes.toString().padStart(2, '0') + ':'
+    + seconds.toString().padStart(2, '0');
+
+}
+
+// Update the clock every second
+setInterval(updateClock, 1000);
+function dropDownMenu(start, end, element) {
+  for (let i = start; i <= end; i++) {
+    const dropDown = document.createElement("option");
+    dropDown.value = i < 10 ? "0" + i : i;
+    dropDown.innerHTML = i < 10 ? "0" + i : i;
+    element.appendChild(dropDown);
+  }
+}
+
+
+function getCurrentTime() {
+  let time = new Date();
+  time = time.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: true,
+  });
+  currentTime.innerHTML = time;
+
+  return time;
+}
+
+
+function getInput(e) {
+  e.preventDefault();
+  const hourValue = setHours.value;
+  const minuteValue = setMinutes.value;
+  const secondValue = setSeconds.value;
+  const amPmValue = setAmPm.value;
+
+  const alarmTime = convertToTime(
+    hourValue,
+    minuteValue,
+    secondValue,
+    amPmValue
+  );
+  setAlarm(alarmTime);
+}
+
+// Converting time to 24 hour format
+function convertToTime(hour, minute, second, amPm) {
+  return `${parseInt(hour)}:${minute}:${second} ${amPm}`;
+}
+
+
+function setAlarm(time, fetching = false) {
+  const alarm = setInterval(() => {
+    if (time === getCurrentTime()) {
+       alert("Alarm Ringing");
+      ringTone.play();
+
     }
+document.querySelector("#stopAlarm").addEventListener("click", stopAlarm);
+
+    console.log("running");
+  }, 500);
+
+  addAlaramToDom(time, alarm);
+  if (!fetching) {
+    saveAlarm(time);
+  }
 }
 
-// Play ringtone continously on resume
-if (!localStorage.getItem('wantToPlay')) {
-    localStorage.setItem('wantToPlay', 'no');
+// Alarms set by user Dislayed in HTML
+function addAlaramToDom(time, intervalId) {
+  const alarm = document.createElement("div");
+  alarm.classList.add("alarm", "mb", "d-flex");
+  alarm.innerHTML = `
+              <div class="time">${time}</div>
+              <button class="btn delete-alarm" data-id=${intervalId}>Delete</button>
+              `;
+  const deleteButton = alarm.querySelector(".delete-alarm");
+  deleteButton.addEventListener("click", (e) => deleteAlarm(e, time, intervalId));
+
+  alarmContainer.prepend(alarm);
 }
 
-// Hide Alarm indicator if alarm is not set
-if (localStorage.getItem('alarmTime') == "00:00:AM")
-    alarmTimeIndicator.className = "d-none";
+// Is alarms saved in Local Storage?
+function checkAlarams() {
+  let alarms = [];
+  const isPresent = localStorage.getItem("alarms");
+  if (isPresent) alarms = JSON.parse(isPresent);
 
-// Add class to content
-if (!localStorage.getItem('contentClass')) {
-    localStorage.setItem('contentClass', 'content flex');
-    content.className = localStorage.getItem('contentClass');
-} else {
-    content.className = localStorage.getItem('contentClass');
+  return alarms;
 }
 
-// Set button text
-if (!localStorage.getItem('btnText')) {
-    localStorage.setItem('btnText', 'Set Alarm');
-    setAlarmBtn.textContent = localStorage.getItem('btnText');
-} else {
-    setAlarmBtn.textContent = localStorage.getItem('btnText');
+// save alarm to local storage
+function saveAlarm(time) {
+  const alarms = checkAlarams();
+
+  alarms.push(time);
+  localStorage.setItem("alarms", JSON.stringify(alarms));
 }
 
-// Set defualt isAlarm
-if (!localStorage.getItem('isAlarmSet')) {
-    localStorage.setItem('isAlarmSet', 'false');
-}
+// Fetching alarms from local storage
+function fetchAlarm() {
+  const alarms = checkAlarams();
 
-// Set default alarm time
-if (!localStorage.getItem('alarmTime')) {
-    localStorage.setItem('alarmTime', '00:00:PM');
-}
-
-// Set hour value
-for (let i = 12; i > 0; i--) {
-    i = i < 10 ? "0" + i : i;
-    let option = ` <option value="${i}">${i}</option>`;
-    hour.firstElementChild.insertAdjacentHTML("afterend", option);
-}
-// Set Minute value
-for (let i = 59; i >= 0; i--) {
-    i = i < 10 ? "0" + i : i;
-    let option = ` <option value="${i}">${i}</option>`;
-    minute.firstElementChild.insertAdjacentHTML("afterend", option);
-}
-// Set AM/PM value
-for (let i = 2; i > 0; i--) {
-    let am_pm = i == 1 ? "AM" : "PM";
-    let option = `<option value="${am_pm}">${am_pm}</option>`;
-    AmPm.firstElementChild.insertAdjacentHTML("afterend", option);
+  alarms.forEach((time) => {
+    setAlarm(time, true);
+  });
 }
 
 
-// Play Alarm function
-const playAlarm = () => {
-    if ((localStorage.getItem('userExited') == 'xxx') || (localStorage.getItem('wantToPlay' == 'yes'))) {
-        ringTone.play();
-    }
-    // console.log(localStorage.getItem('userExited'));
-    ringTone.loop = true;
+function deleteAlarm(event, time, intervalId) {
+  const self = event.target;
+
+  clearInterval(intervalId);
+
+  const alarm = self.parentElement;
+  console.log(time);
+
+  deleteAlarmFromLocal(time);
+  alarm.remove();
 }
 
-setInterval(() => {
-    let date = new Date();
-    // var h = ((date.getHours() - 12));
-    let h = date.getHours(); 
-    let m = date.getMinutes();
-    let s = date.getSeconds();
-    let ampm = "AM";
+function deleteAlarmFromLocal(time) {
+  const alarms = checkAlarams();
 
-    // 12 Hour Format
-    if (h > 11) {
-    h = h - 12;
-    // ampm = (date.getHours()) < 12 ? 'AM' : 'PM';
-    ampm = 'PM'
-    }
-
-    // if hour value is 0 then set it to 12
-    h = h == 0 ? h = 12 : h;
-    // Adding 0 before h , m ,s 
-    h = h < 10 ? "0" + h : h;
-    m = m < 10 ? "0" + m : m;
-    s = s < 10 ? "0" + s : s;
-
-    // Update time every second
-    currentTime.textContent = `${h}:${m}:${s} ${ampm}`;
-
-    // Play ringtone if alarm time mathces with current time
-    if ((localStorage.getItem('alarmTime') == `${h}:${m}:${ampm}`) || (localStorage.getItem('wantToPlay') == 'yes')) {
-        playAlarm();
-    }
-}, 1000);
-
-
-
-// Set alarm 
-const setAlarm = () => {
-
-    // Clear alarm
-    if (localStorage.getItem('isAlarmSet') == 'true') {
-        // Reset Alarm time
-        localStorage.setItem('alarmTime', "00:00:AM");
-        ringTone.pause();
-        // Enable selection of time
-        localStorage.setItem('contentClass', 'content flex')
-        content.className = localStorage.getItem('contentClass');
-        // change button text to "Set alarm"
-        localStorage.setItem('btnText', 'Set Alarm')
-        setAlarmBtn.textContent = localStorage.getItem('btnText');
-        // Hide resume button
-        resumeBtn.hidden = true
-        // Reset alarm indicator
-        alarmTimeIndicator.textContent = "Alarm Time set to: ";
-        alarmTimeIndicator.className = "d-none";
-        // Set want to play to no to stop alarm
-        localStorage.setItem('wantToPlay', 'no')
-        // Return
-        return localStorage.setItem('isAlarmSet', 'false');
-    }
-
-    // Getting alarm time from user
-    let time = `${hour.value}:${minute.value}:${AmPm.value}`;
-    if (time.includes("Hour") || time.includes("Minute") || time.includes("AM/PM")) {
-        alert("Please select a valid time");
-        return;
-    }
-
-    // Set alarm to true
-    localStorage.setItem('isAlarmSet', 'true');
-    // Set alarm time
-    localStorage.setItem('alarmTime', time);
-    // Disable selection of time when alarm is set
-    localStorage.setItem('contentClass', 'content flex disable');
-    content.className = localStorage.getItem('contentClass');
-    // Set button text to "Clear Alarm";
-    localStorage.setItem('btnText', 'Clear Alarm')
-    setAlarmBtn.textContent = localStorage.getItem('btnText');
-    // Set Alarm Time indicator
-    alarmTimeIndicator.textContent = "Alarm Time set to: " + localStorage.getItem('alarmTime');
-    alarmTimeIndicator.className = "";
-    // Set user exited to false to avoid DOM exception
-    localStorage.setItem('userExited', 'xxx');
+  const index = alarms.indexOf(time);
+  alarms.splice(index, 1);
+  localStorage.setItem("alarms", JSON.stringify(alarms));
 }
+// ... your existing code ...
+//  used to stopAlarm
 
-
-
-// Hide Welcome Screen
-const hideWelcomeScreen = () => {
-    // hide WelcomeScreen
-    welcomeBackScreen.className = 'd-none';
-    // Set alarm time indicator
-    alarmTimeIndicator.textContent = "Alarm Time set to: " + localStorage.getItem('alarmTime');
-    // Set userExited to xxx to avoid DomException
-    localStorage.setItem('userExited', 'xxx');
-    // Set want to play to play ringtone even if time has expired 
-    localStorage.setItem('wantToPlay', 'yes');
+function stopAlarm() {
+    ringTone.pause();
+    
 }
-
-// --------------------Eventlisteners-----------------------------
-
-// Set Button
-setAlarmBtn.addEventListener('click', setAlarm);
-// Resume Button
-resumeBtn.addEventListener('click', hideWelcomeScreen);
-
-// Check if user has exited the page or refreshed
-const beforeUnloadListener = (event) => {
-    localStorage.setItem('userExited', 'true');
-};
-window.addEventListener("beforeunload", beforeUnloadListener);
-
